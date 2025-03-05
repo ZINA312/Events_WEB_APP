@@ -4,7 +4,6 @@ using Events_WEB_APP.Core.Entities;
 using Events_WEB_APP.Persistence.Contracts.Event;
 using Events_WEB_APP.Persistence.Contracts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Events_WEB_APP.API.Controllers
@@ -17,6 +16,12 @@ namespace Events_WEB_APP.API.Controllers
         private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _env;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="EventController"/>.
+        /// </summary>
+        /// <param name="eventService">Сервис для управления событиями.</param>
+        /// <param name="mapper">Mapper для преобразования между сущностями и DTO.</param>
+        /// <param name="env">Среда веб-хостинга.</param>
         public EventController(
             IEventService eventService,
             IMapper mapper,
@@ -27,6 +32,12 @@ namespace Events_WEB_APP.API.Controllers
             _env = env;
         }
 
+        /// <summary>
+        /// Получает все события с пагинацией.
+        /// </summary>
+        /// <param name="page">Номер страницы для получения (по умолчанию 1).</param>
+        /// <param name="pageSize">Размер страницы (по умолчанию 10).</param>
+        /// <returns>Пагинированный ответ с событиями.</returns>
         [HttpGet]
         public async Task<ActionResult<PaginatedResponse<EventResponse>>> GetAll(
             [FromQuery] int page = 1,
@@ -36,6 +47,11 @@ namespace Events_WEB_APP.API.Controllers
             return Ok(MapToPaginatedResponse(result));
         }
 
+        /// <summary>
+        /// Получает событие по его ID.
+        /// </summary>
+        /// <param name="id">ID события для получения.</param>
+        /// <returns>Ответ с событием.</returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<EventResponse>> GetById(Guid id)
         {
@@ -45,6 +61,11 @@ namespace Events_WEB_APP.API.Controllers
             return Ok(_mapper.Map<EventResponse>(eventEntity));
         }
 
+        /// <summary>
+        /// Создает новое событие.
+        /// </summary>
+        /// <param name="request">Запрос для создания события.</param>
+        /// <returns>Ответ с созданным событием.</returns>
         [HttpPost]
         [Authorize(Roles="Admin")]
         public async Task<ActionResult<EventResponse>> Create(
@@ -58,6 +79,12 @@ namespace Events_WEB_APP.API.Controllers
                 _mapper.Map<EventResponse>(eventEntity));
         }
 
+        /// <summary>
+        /// Обновляет существующее событие.
+        /// </summary>
+        /// <param name="id">ID события для обновления.</param>
+        /// <param name="request">Запрос с обновленными данными события.</param>
+        /// <returns>Результат операции обновления.</returns>
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(
@@ -77,6 +104,12 @@ namespace Events_WEB_APP.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Загружает изображение для события.
+        /// </summary>
+        /// <param name="id">ID события для загрузки изображения.</param>
+        /// <param name="request">Запрос с изображением.</param>
+        /// <returns>URL загруженного изображения.</returns>
         [HttpPost("{id}/image")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<string>> UploadImage(
@@ -105,6 +138,15 @@ namespace Events_WEB_APP.API.Controllers
             return Ok(_mapper.Map<EventResponse>(eventEntity).ImageUrl);
         }
 
+        /// <summary>
+        /// Фильтрует события по категориям, дате и местоположению с пагинацией.
+        /// </summary>
+        /// <param name="category">Категория для фильтрации.</param>
+        /// <param name="date">Дата для фильтрации.</param>
+        /// <param name="location">Местоположение для фильтрации.</param>
+        /// <param name="page">Номер страницы для получения (по умолчанию 1).</param>
+        /// <param name="pageSize">Размер страницы (по умолчанию 10).</param>
+        /// <returns>Пагинированный ответ с отфильтрованными событиями.</returns>
         [HttpGet("filter")]
         public async Task<ActionResult<PaginatedResponse<EventResponse>>> Filter(
             [FromQuery] string? category,
@@ -119,6 +161,39 @@ namespace Events_WEB_APP.API.Controllers
             return Ok(MapToPaginatedResponse(result));
         }
 
+        /// <summary>
+        /// Удаляет событие по его ID.
+        /// </summary>
+        /// <param name="id">ID события для удаления.</param>
+        /// <returns>Результат операции удаления.</returns>
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            try
+            {
+                await _eventService.DeleteEventAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Преобразует пагинированный ответ событий в ответ с пагинацией событий.
+        /// </summary>
+        /// <param name="source">Исходный пагинированный ответ событий.</param>
+        /// <returns>Пагинированный ответ с событиями.</returns>
         private PaginatedResponse<EventResponse> MapToPaginatedResponse(
             PaginatedResponse<Event> source)
         {
@@ -129,6 +204,11 @@ namespace Events_WEB_APP.API.Controllers
                 source.TotalCount);
         }
 
+        /// <summary>
+        /// Сохраняет файл на сервере.
+        /// </summary>
+        /// <param name="file">Файл для сохранения.</param>
+        /// <returns>Имя сохраненного файла.</returns>
         private async Task<string> SaveFile(IFormFile file)
         {
             var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");

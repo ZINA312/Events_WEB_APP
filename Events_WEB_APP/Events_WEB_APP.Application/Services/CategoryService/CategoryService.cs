@@ -1,21 +1,36 @@
 ﻿using Events_WEB_APP.Core.Entities;
 using Events_WEB_APP.Persistence.UnitsOfWork;
-using Npgsql.EntityFrameworkCore.PostgreSQL.ValueGeneration.Internal;
+using FluentValidation;
 
 namespace Events_WEB_APP.Application.Services.CategoryService
 {
+    /// <summary>
+    /// Сервис для управления категориями.
+    /// </summary>
     public class CategoryService : ICategoryService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IValidator<Category> _validator;
 
-        public CategoryService(IUnitOfWork unitOfWork)
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="CategoryService"/>.
+        /// </summary>
+        /// <param name="unitOfWork">Единица работы для доступа к репозиториям.</param>
+        /// <param name="validator">Валидатор для проверки категорий.</param>
+        public CategoryService(IUnitOfWork unitOfWork, IValidator<Category> validator)
         {
             _unitOfWork = unitOfWork;
+            _validator = validator;
         }
 
+        /// <summary>
+        /// Создает новую категорию.
+        /// </summary>
+        /// <param name="category">Категория для создания.</param>
+        /// <returns>Созданная категория.</returns>
         public async Task<Category> CreateCategoryAsync(Category category)
         {
-            ValidateCategory(category);
+            await ValidateCategoryAsync(category);
             await CheckUniqueCategoryName(category.Name);
 
             await _unitOfWork.Categories.AddAsync(category);
@@ -23,6 +38,11 @@ namespace Events_WEB_APP.Application.Services.CategoryService
             return category;
         }
 
+        /// <summary>
+        /// Удаляет категорию по идентификатору.
+        /// </summary>
+        /// <param name="categoryId">Идентификатор категории для удаления.</param>
+        /// <returns>Удаленная категория.</returns>
         public async Task<Category> DeleteCategoryAsync(Guid categoryId)
         {
             var category = await ValidateCategoryExists(categoryId);
@@ -31,19 +51,33 @@ namespace Events_WEB_APP.Application.Services.CategoryService
             return category;
         }
 
+        /// <summary>
+        /// Получает все категории.
+        /// </summary>
+        /// <returns>Список категорий.</returns>
         public async Task<List<Category>> GetAllCategoriesAsync()
         {
             return (await _unitOfWork.Categories.GetAllAsync()).ToList();
         }
 
+        /// <summary>
+        /// Получает категорию по идентификатору.
+        /// </summary>
+        /// <param name="categoryId">Идентификатор категории.</param>
+        /// <returns>Найдена категория.</returns>
         public async Task<Category> GetCategoryByIdAsync(Guid categoryId)
         {
             return await ValidateCategoryExists(categoryId);
         }
 
+        /// <summary>
+        /// Обновляет существующую категорию.
+        /// </summary>
+        /// <param name="category">Обновленная категория.</param>
+        /// <returns>Обновленная категория.</returns>
         public async Task<Category> UpdateCategoryAsync(Category category)
         {
-            ValidateCategory(category);
+            await ValidateCategoryAsync(category);
             var existingCategory = await ValidateCategoryExists(category.Id);
             await CheckUniqueCategoryName(category.Name, existingCategory.Id);
 
@@ -59,18 +93,15 @@ namespace Events_WEB_APP.Application.Services.CategoryService
                 ?? throw new KeyNotFoundException($"Category with ID {categoryId} not found");
         }
 
-        private void ValidateCategory(Category category)
+        private async Task ValidateCategoryAsync(Category category)
         {
-            var errors = new List<string>();
+            var validationResult = await _validator.ValidateAsync(category);
 
-            if (string.IsNullOrWhiteSpace(category.Name))
-                errors.Add("Category name is required");
-
-            if (category.Name?.Length > 30)
-                errors.Add("Category name cannot exceed 30 characters");
-
-            if (errors.Any())
-                throw new ArgumentException(string.Join(", ", errors));
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ArgumentException(errors);
+            }
         }
 
         private async Task CheckUniqueCategoryName(string name, Guid? excludedId = null)

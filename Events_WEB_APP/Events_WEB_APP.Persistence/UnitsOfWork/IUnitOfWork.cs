@@ -6,6 +6,9 @@ using Events_WEB_APP.Persistence.Repositories.UserRepository;
 
 namespace Events_WEB_APP.Persistence.UnitsOfWork
 {
+    /// <summary>
+    /// Интерфейс единицы работы для управления репозиториями.
+    /// </summary>
     public interface IUnitOfWork : IDisposable
     {
         ICategoryRepository Categories { get; }

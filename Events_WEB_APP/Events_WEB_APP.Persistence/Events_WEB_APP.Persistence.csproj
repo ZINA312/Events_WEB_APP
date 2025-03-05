@@ -19,6 +19,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Events_WEB_APP.Core\Events_WEB_APP.Core.csproj" />
+    <ProjectReference Include="..\Events_WEB_APP.Infrastructure\Events_WEB_APP.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

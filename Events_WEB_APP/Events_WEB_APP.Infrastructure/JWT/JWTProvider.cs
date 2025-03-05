@@ -8,13 +8,27 @@ using System.Text;
 
 namespace Events_WEB_APP.Infrastructure.JWT
 {
+    /// <summary>
+    /// Реализация интерфейса <see cref="IJWTProvider"/> для работы с JWT (JSON Web Tokens).
+    /// </summary>
     public class JWTProvider : IJWTProvider
     {
         private readonly JWTOptions _options;
+
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="JWTProvider"/>.
+        /// </summary>
+        /// <param name="options">Настройки JWT.</param>
         public JWTProvider(IOptions<JWTOptions> options)
         {
             _options = options.Value;
         }
+
+        /// <summary>
+        /// Генерирует JWT для указанного пользователя.
+        /// </summary>
+        /// <param name="user">Пользователь, для которого генерируется токен.</param>
+        /// <returns>Сгенерированный токен.</returns>
         public string GenerateToken(User user)
         {
             var claims = new List<Claim> 
@@ -35,10 +49,22 @@ namespace Events_WEB_APP.Infrastructure.JWT
 
             return tokenValue;
         }
+
+        /// <summary>
+        /// Генерирует токен обновления.
+        /// </summary>
+        /// <returns>Сгенерированный токен обновления.</returns>
         public string GenerateRefreshToken()
         {
             return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
+
+        /// <summary>
+        /// Извлекает объект <see cref="ClaimsPrincipal"/> из токена.
+        /// </summary>
+        /// <param name="token">JWT, из которого будет извлечен объект.</param>
+        /// <returns>Объект <see cref="ClaimsPrincipal"/> из токена.</returns>
+        /// <exception cref="SecurityTokenException">Выбрасывается, если токен недействителен.</exception>
         public ClaimsPrincipal GetPrincipalFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

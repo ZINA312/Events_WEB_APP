@@ -1,23 +1,38 @@
 ﻿using Events_WEB_APP.Core.Entities;
 using Events_WEB_APP.Persistence.Contracts;
 using Events_WEB_APP.Persistence.UnitsOfWork;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Events_WEB_APP.Application.Services.EventService
 {
+    /// <summary>
+    /// Сервис для управления событиями.
+    /// </summary>
     public class EventService : IEventService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IValidator<Event> _validator;
 
-        public EventService(IUnitOfWork unitOfWork)
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="EventService"/>.
+        /// </summary>
+        /// <param name="unitOfWork">Единица работы для доступа к репозиториям.</param>
+        /// <param name="validator">Валидатор для проверки событий.</param>
+        public EventService(IUnitOfWork unitOfWork, IValidator<Event> validator)
         {
             _unitOfWork = unitOfWork;
+            _validator = validator; 
         }
 
+        /// <summary>
+        /// Создает новое событие.
+        /// </summary>
+        /// <param name="eventEntity">Событие для создания.</param>
         public async Task CreateEventAsync(Event eventEntity)
         {
             ArgumentNullException.ThrowIfNull(eventEntity, nameof(eventEntity));
-            ValidateEvent(eventEntity);
+            await ValidateEventAsync(eventEntity);
             var category = await _unitOfWork.Categories.GetByIdAsync(eventEntity.CategoryId);
             if (category == null)
             {
@@ -28,6 +43,10 @@ namespace Events_WEB_APP.Application.Services.EventService
             await _unitOfWork.CommitAsync();
         }
 
+        /// <summary>
+        /// Удаляет событие по идентификатору.
+        /// </summary>
+        /// <param name="eventId">Идентификатор события для удаления.</param>
         public async Task DeleteEventAsync(Guid eventId)
         {
             if (eventId == Guid.Empty)
@@ -43,11 +62,20 @@ namespace Events_WEB_APP.Application.Services.EventService
             await _unitOfWork.CommitAsync();
         }
 
+        /// <summary>
+        /// Получает все события.
+        /// </summary>
+        /// <returns>Список событий.</returns>
         public async Task<List<Event>> GetAllEventsAsync()
         {
             return (await _unitOfWork.Events.GetAllAsync()).ToList();
         }
 
+        /// <summary>
+        /// Получает событие по идентификатору.
+        /// </summary>
+        /// <param name="eventId">Идентификатор события.</param>
+        /// <returns>Найденное событие.</returns>
         public async Task<Event> GetEventByIdAsync(Guid eventId)
         {
             if (eventId == Guid.Empty)
@@ -57,6 +85,15 @@ namespace Events_WEB_APP.Application.Services.EventService
             return eventEntity ?? throw new KeyNotFoundException($"Event with ID {eventId} not found");
         }
 
+        /// <summary>
+        /// Получает события с пагинацией.
+        /// </summary>
+        /// <param name="categoryName">Название категории для фильтрации.</param>
+        /// <param name="date">Дата события для фильтрации.</param>
+        /// <param name="location">Место проведения события для фильтрации.</param>
+        /// <param name="pageNo">Номер страницы.</param>
+        /// <param name="pageSize">Размер страницы.</param>
+        /// <returns>Пагинированный ответ с событиями.</returns>
         public async Task<PaginatedResponse<Event>> GetEventsPaginatedAsync(
             string? categoryName,
             DateTime? date,
@@ -98,11 +135,15 @@ namespace Events_WEB_APP.Application.Services.EventService
             return new PaginatedResponse<Event>(items, pageNo, pageSize, totalCount);
         }
 
+        /// <summary>
+        /// Обновляет существующее событие.
+        /// </summary>
+        /// <param name="eventEntity">Обновленное событие.</param>
         public async Task UpdateEventAsync(Event eventEntity)
         {
             ArgumentNullException.ThrowIfNull(eventEntity, nameof(eventEntity));
 
-            ValidateEvent(eventEntity); 
+            await ValidateEventAsync(eventEntity); 
 
             var existingEvent = await _unitOfWork.Events.GetByIdAsync(eventEntity.Id);
             if (existingEvent == null)
@@ -120,40 +161,19 @@ namespace Events_WEB_APP.Application.Services.EventService
             await _unitOfWork.CommitAsync();
         }
 
-        private void ValidateEvent(Event eventEntity)
+        /// <summary>
+        /// Валидирует событие.
+        /// </summary>
+        /// <param name="eventEntity">Событие для валидации.</param>
+        private async Task ValidateEventAsync(Event eventEntity)
         {
-            var errors = new List<string>();
+            var validationResult = await _validator.ValidateAsync(eventEntity);
 
-            if (string.IsNullOrWhiteSpace(eventEntity.Name))
-                errors.Add("Event name is required");
-            else if (eventEntity.Name.Length > 100)
-                errors.Add("Event name must be 100 characters or less");
-
-            if (!string.IsNullOrWhiteSpace(eventEntity.Description))
+            if (!validationResult.IsValid)
             {
-                if (eventEntity.Description.Length > 500)
-                    errors.Add("Description must be 500 characters or less");
+                var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ArgumentException(errors);
             }
-
-            if (eventEntity.Date < DateTime.Now)
-                errors.Add("Event date cannot be in the past");
-
-            if (string.IsNullOrWhiteSpace(eventEntity.Location))
-                errors.Add("Location is required");
-            else if (eventEntity.Location.Length > 50)
-                errors.Add("Location must be 50 characters or less");
-
-            if (eventEntity.MaxNumOfParticipants <= 0)
-                errors.Add("Max participants must be greater than 0");
-
-            eventEntity.ImagePath ??= "default.png";
-            if (string.IsNullOrWhiteSpace(eventEntity.ImagePath))
-                errors.Add("Image path is required");
-            else if (eventEntity.ImagePath.Length > 50)
-                errors.Add("Image path too long (max 50 characters)");
-
-            if (errors.Any())
-                throw new ArgumentException(string.Join("\n", errors));
         }
     }
 }

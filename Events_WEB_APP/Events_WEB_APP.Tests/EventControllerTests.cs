@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System.Net.Http;
 using System.Security.Claims;
 
 namespace Events_WEB_APP.API.Tests.Controllers
@@ -309,6 +308,60 @@ namespace Events_WEB_APP.API.Tests.Controllers
 
             // Assert
             Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task Delete_ExistingEventAsAdmin_ReturnsNoContent()
+        {
+            // Arrange
+            SetAdminUser();
+            var eventId = Guid.NewGuid();
+
+            _mockEventService.Setup(s => s.DeleteEventAsync(eventId))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _controller.Delete(eventId);
+
+            // Assert
+            Assert.IsType<NoContentResult>(result);
+            _mockEventService.Verify(s => s.DeleteEventAsync(eventId), Times.Once);
+        }
+
+        [Fact]
+        public async Task Delete_NonExistingEvent_ReturnsNotFound()
+        {
+            // Arrange
+            SetAdminUser();
+            var nonExistingId = Guid.NewGuid();
+
+            _mockEventService.Setup(s => s.DeleteEventAsync(nonExistingId))
+                .ThrowsAsync(new KeyNotFoundException("Event not found"));
+
+            // Act
+            var result = await _controller.Delete(nonExistingId);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.Equal("Event not found", notFoundResult.Value);
+        }
+
+        [Fact]
+        public async Task Delete_InvalidId_ReturnsBadRequest()
+        {
+            // Arrange
+            SetAdminUser();
+            var invalidId = Guid.Empty;
+
+            _mockEventService.Setup(s => s.DeleteEventAsync(invalidId))
+                .ThrowsAsync(new ArgumentException("Invalid ID"));
+
+            // Act
+            var result = await _controller.Delete(invalidId);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Invalid ID", badRequestResult.Value);
         }
     }
 }

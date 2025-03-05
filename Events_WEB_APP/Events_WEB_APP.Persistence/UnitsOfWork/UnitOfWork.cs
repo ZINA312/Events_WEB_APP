@@ -7,6 +7,9 @@ using Events_WEB_APP.Persistence.Repositories.UserRepository;
 
 namespace Events_WEB_APP.Persistence.UnitsOfWork
 {
+    /// <summary>
+    /// Реализация единицы работы для управления репозиториями.
+    /// </summary>
     public class UnitOfWork : IUnitOfWork
     {
         private readonly EventsAppDbContext _context;
@@ -16,6 +19,15 @@ namespace Events_WEB_APP.Persistence.UnitsOfWork
         private IRoleRepository _roleRepository;
         private IUserRepository _userRepository;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="UnitOfWork"/>.
+        /// </summary>
+        /// <param name="context">Контекст базы данных.</param>
+        /// <param name="categoryRepository">Репозиторий категорий.</param>
+        /// <param name="eventRepository">Репозиторий событий.</param>
+        /// <param name="participantRepository">Репозиторий участников.</param>
+        /// <param name="roleRepository">Репозиторий ролей.</param>
+        /// <param name="userRepository">Репозиторий пользователей.</param>
         public UnitOfWork(EventsAppDbContext context, ICategoryRepository categoryRepository, IEventRepository eventRepository,
             IParticipantRepository participantRepository, IRoleRepository roleRepository, IUserRepository userRepository)
         {
@@ -47,10 +59,18 @@ namespace Events_WEB_APP.Persistence.UnitsOfWork
         {
             get { return _userRepository; }
         }
+
+        /// <summary>
+        /// Асинхронно сохраняет изменения в базе данных.
+        /// </summary>
         public async Task CommitAsync()
         {
             await _context.SaveChangesAsync();
         }
+
+        /// <summary>
+        /// Освобождает ресурсы, используемые единицей работы.
+        /// </summary>
         public async void Dispose()
         {
             await _context.DisposeAsync();

@@ -15,13 +15,22 @@ namespace Events_WEB_APP.API.Controllers
         private readonly ICategoryService _categoryService;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="CategoryController"/>.
+        /// </summary>
+        /// <param name="categoryService">Сервис для управления категориями.</param>
+        /// <param name="mapper">Mapper для преобразования между сущностями и DTO.</param>
         public CategoryController(ICategoryService categoryService, IMapper mapper)
         {
             _categoryService = categoryService;
             _mapper = mapper;
         }
 
-
+        /// <summary>
+        /// Создает новую категорию.
+        /// </summary>
+        /// <param name="request">Запрос, содержащий детали категории.</param>
+        /// <returns>Ответ с созданной категорией.</returns>
         [HttpPost]
         public async Task<ActionResult<CategoryResponse>> CreateCategory(
             [FromBody] CreateCategoryRequest request)
@@ -43,6 +52,10 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает все категории.
+        /// </summary>
+        /// <returns>Список категорий.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CategoryResponse>>> GetAllCategories()
         {
@@ -50,6 +63,11 @@ namespace Events_WEB_APP.API.Controllers
             return Ok(_mapper.Map<List<CategoryResponse>>(categories));
         }
 
+        /// <summary>
+        /// Получает категорию по ее ID.
+        /// </summary>
+        /// <param name="categoryId">ID категории для получения.</param>
+        /// <returns>Ответ с категорией.</returns>
         [HttpGet("{categoryId}")]
         public async Task<ActionResult<CategoryResponse>> GetCategoryById(Guid categoryId)
         {
@@ -64,6 +82,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Обновляет существующую категорию.
+        /// </summary>
+        /// <param name="request">Запрос с обновленными данными категории.</param>
+        /// <returns>Ответ с обновленной категорией.</returns>
         [HttpPut]
         public async Task<IActionResult> UpdateCategory(
             [FromBody] UpdateCategoryRequest request)
@@ -86,6 +109,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Удаляет категорию по ее ID.
+        /// </summary>
+        /// <param name="categoryId">ID категории для удаления.</param>
+        /// <returns>Результат операции удаления.</returns>
         [HttpDelete("{categoryId}")]
         public async Task<IActionResult> DeleteCategory(Guid categoryId)
         {

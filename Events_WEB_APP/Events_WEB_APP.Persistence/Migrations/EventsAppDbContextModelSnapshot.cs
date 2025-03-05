@@ -164,13 +164,26 @@ namespace Events_WEB_APP.Persistence.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("Name")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
 
                     b.HasKey("Id");
 
                     b.ToTable("Roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("4a877850-8d00-4ede-b0e8-a0765135b5af"),
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("4e850035-55c5-427a-8f6a-698f41c8a8f5"),
+                            Name = "User"
+                        });
                 });
 
             modelBuilder.Entity("Events_WEB_APP.Core.Entities.User", b =>
@@ -194,8 +207,8 @@ namespace Events_WEB_APP.Persistence.Migrations
                         .HasColumnName("PasswordHash");
 
                     b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("RefreshToken");
 
                     b.Property<DateTime>("RefreshTokenExpiry")
                         .HasColumnType("timestamp with time zone");
@@ -215,6 +228,17 @@ namespace Events_WEB_APP.Persistence.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("4cccb650-4f23-4785-a408-13c1e6126cd3"),
+                            Email = "admin@events.com",
+                            PasswordHash = "$2a$11$aGCgAQybgC0p6PahELc4yOuSOIEfCSRJ3S43WUsl8mGf52vKn7V2C",
+                            RefreshTokenExpiry = new DateTime(2026, 3, 5, 11, 51, 23, 643, DateTimeKind.Utc).AddTicks(1601),
+                            RoleId = new Guid("4a877850-8d00-4ede-b0e8-a0765135b5af"),
+                            UserName = "admin"
+                        });
                 });
 
             modelBuilder.Entity("Events_WEB_APP.Core.Entities.Event", b =>

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Events_WEB_APP.Persistence.Migrations
 {
     /// <inheritdoc />
@@ -28,7 +30,7 @@ namespace Events_WEB_APP.Persistence.Migrations
                 columns: table => new
                 {
                     RoleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Name = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -65,11 +67,11 @@ namespace Events_WEB_APP.Persistence.Migrations
                 {
                     UserID = table.Column<Guid>(type: "uuid", nullable: false),
                     UserName = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    Login = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
-                    PasswordHash = table.Column<byte[]>(type: "bytea", nullable: false),
-                    PasswordSalt = table.Column<byte[]>(type: "bytea", nullable: false),
-                    RoleId = table.Column<Guid>(type: "uuid", nullable: false)
+                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RefreshToken = table.Column<string>(type: "text", nullable: true),
+                    RefreshTokenExpiry = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -87,10 +89,11 @@ namespace Events_WEB_APP.Persistence.Migrations
                 columns: table => new
                 {
                     ParticipantID = table.Column<Guid>(type: "uuid", nullable: false),
+                    EventId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     FirstName = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     LastName = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    BirthDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    BirthDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DateTimeOfRegistration = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false)
                 },
@@ -104,6 +107,20 @@ namespace Events_WEB_APP.Persistence.Migrations
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "RoleId", "Name" },
+                values: new object[,]
+                {
+                    { new Guid("4a877850-8d00-4ede-b0e8-a0765135b5af"), "Admin" },
+                    { new Guid("4e850035-55c5-427a-8f6a-698f41c8a8f5"), "User" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "UserID", "Email", "PasswordHash", "RefreshToken", "RefreshTokenExpiry", "RoleId", "UserName" },
+                values: new object[] { new Guid("4cccb650-4f23-4785-a408-13c1e6126cd3"), "admin@events.com", "$2a$11$aGCgAQybgC0p6PahELc4yOuSOIEfCSRJ3S43WUsl8mGf52vKn7V2C", null, new DateTime(2026, 3, 5, 11, 51, 23, 643, DateTimeKind.Utc).AddTicks(1601), new Guid("4a877850-8d00-4ede-b0e8-a0765135b5af"), "admin" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Events_CategoryID",

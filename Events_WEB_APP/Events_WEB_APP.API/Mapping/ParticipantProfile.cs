@@ -4,8 +4,14 @@ using Events_WEB_APP.Persistence.Contracts.Participant;
 
 namespace Events_WEB_APP.API.Mapping
 {
+    /// <summary>
+    /// Профиль для маппинга участников.
+    /// </summary>
     public class ParticipantProfile : Profile
     {
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ParticipantProfile"/>.
+        /// </summary>
         public ParticipantProfile()
         {
             CreateMap<ParticipantCreateRequest, Participant>()

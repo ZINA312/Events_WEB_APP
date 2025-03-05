@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
 using Events_WEB_APP.Persistence.Contracts.User;
 using Events_WEB_APP.Application.Services.UserService;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Events_WEB_APP.API.Controllers
 {
@@ -15,6 +14,11 @@ namespace Events_WEB_APP.API.Controllers
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="UserController"/>.
+        /// </summary>
+        /// <param name="userService">Сервис для управления пользователями.</param>
+        /// <param name="mapper">Mapper для преобразования между сущностями и DTO.</param>
         public UserController(
             IUserService userService,
             IMapper mapper)
@@ -23,6 +27,11 @@ namespace Events_WEB_APP.API.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Регистрирует нового пользователя.
+        /// </summary>
+        /// <param name="request">Запрос для регистрации пользователя.</param>
+        /// <returns>Результат операции регистрации.</returns>
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync([FromBody] RegisterUserRequest request)
         {
@@ -40,6 +49,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Выполняет вход пользователя.
+        /// </summary>
+        /// <param name="request">Запрос для входа пользователя.</param>
+        /// <returns>Результат операции входа.</returns>
         [HttpPost("login")]
         public async Task<IActionResult> LoginAsync([FromBody] LoginUserRequest request)
         {
@@ -60,17 +74,20 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
-        //токены достаем из кук, передаем явно для тестирования
+        /// <summary>
+        /// Обновляет токены доступа и обновления.
+        /// </summary>
+        /// <param name="accessT">Истекший токен доступа.</param>
+        /// <param name="refreshT">Токен обновления.</param>
+        /// <returns>Результат операции обновления токенов.</returns>
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken(string accessT, string refreshT)
+        [Authorize]
+        public async Task<IActionResult> RefreshToken()
         {
             try
             {
-                //var expiredAccessToken = Request.Cookies["access-token"];
-                //var refreshToken = Request.Cookies["refresh-token"];
-                var expiredAccessToken = accessT;
-                var refreshToken = refreshT;
-
+                var expiredAccessToken = Request.Cookies["definitely-not-jwt-token"];
+                var refreshToken = Request.Cookies["definitely-not-refresh-token"];
 
                 if (string.IsNullOrEmpty(expiredAccessToken) || string.IsNullOrEmpty(refreshToken))
                     return Unauthorized("Tokens required");
@@ -89,7 +106,13 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает пользователя по его ID.
+        /// </summary>
+        /// <param name="userId">ID пользователя для получения.</param>
+        /// <returns>Ответ с пользователем.</returns>
         [HttpGet("{userId}")]
+        [Authorize]
         public async Task<IActionResult> GetUser(Guid userId)
         {
             try
@@ -100,6 +123,53 @@ namespace Events_WEB_APP.API.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Получает всех пользователей.
+        /// </summary>
+        /// <returns>Список пользователей.</returns>
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var users = await _userService.GetAllUsersAsync();
+                return Ok(_mapper.Map<List<UserResponse>>(users));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Удаляет пользователя по его ID.
+        /// </summary>
+        /// <param name="userId">ID пользователя для удаления.</param>
+        /// <returns>Результат операции удаления.</returns>
+        [HttpDelete("{userId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(Guid userId)
+        {
+            try
+            {
+                await _userService.DeleteUserAsync(userId);
+                return Ok(new { Message = "User deleted successfully" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
     }

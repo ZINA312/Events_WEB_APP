@@ -1,11 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Events_WEB_APP.Persistence.Contracts.Event
+﻿namespace Events_WEB_APP.Persistence.Contracts.Event
 {
+    /// <summary>
+    /// Представляет ответ для события, содержащий информацию о событии.
+    /// </summary>
+    /// <param name="Id">Уникальный идентификатор события.</param>
+    /// <param name="Name">Название события.</param>
+    /// <param name="Description">Описание события.</param>
+    /// <param name="Date">Дата события.</param>
+    /// <param name="Location">Место проведения события.</param>
+    /// <param name="CategoryId">Идентификатор категории события.</param>
+    /// <param name="MaxNumOfParticipants">Максимальное количество участников.</param>
+    /// <param name="ImageUrl">URL изображения события.</param>
     public record EventResponse(
     Guid Id,
     string Name,
@@ -16,6 +21,9 @@ namespace Events_WEB_APP.Persistence.Contracts.Event
     int MaxNumOfParticipants,
     string ImageUrl)
     {
+        /// <summary>
+        /// Конструктор по умолчанию для создания нового экземпляра <see cref="EventResponse"/>.
+        /// </summary>
         public EventResponse() : this(
             default,
             string.Empty,

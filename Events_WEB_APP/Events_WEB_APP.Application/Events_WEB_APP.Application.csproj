@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Events_WEB_APP.Core\Events_WEB_APP.Core.csproj" />
     <ProjectReference Include="..\Events_WEB_APP.Infrastructure\Events_WEB_APP.Infrastructure.csproj" />
     <ProjectReference Include="..\Events_WEB_APP.Persistence\Events_WEB_APP.Persistence.csproj" />

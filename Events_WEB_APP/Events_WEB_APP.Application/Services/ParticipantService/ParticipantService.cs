@@ -1,24 +1,39 @@
 ﻿using Events_WEB_APP.Core.Entities;
-using Events_WEB_APP.Persistence.Contracts.Participant;
 using Events_WEB_APP.Persistence.UnitsOfWork;
+using FluentValidation;
 
 namespace Events_WEB_APP.Application.Services.ParticipantService
 {
+    /// <summary>
+    /// Сервис для управления участниками.
+    /// </summary>
     public class ParticipantService : IParticipantService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IValidator<Participant> _validator;
         private const int MaxPageSize = 50;
 
-        public ParticipantService(IUnitOfWork unitOfWork)
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ParticipantService"/>.
+        /// </summary>
+        /// <param name="unitOfWork">Единица работы для доступа к репозиториям.</param>
+        /// <param name="validator">Валидатор для проверки участников.</param>
+        public ParticipantService(IUnitOfWork unitOfWork, IValidator<Participant> validator)
         {
             _unitOfWork = unitOfWork;
+            _validator = validator;
         }
 
+        /// <summary>
+        /// Создает нового участника.
+        /// </summary>
+        /// <param name="participant">Участник для создания.</param>
+        /// <returns>Созданный участник.</returns>
         public async Task<Participant> CreateParticipantAsync(Participant participant)
         {
             ArgumentNullException.ThrowIfNull(participant);
             
-            ValidateParticipant(participant);
+            await ValidateParticipant(participant);
 
             await ValidateRelationships(participant);
             await CheckDuplicateParticipation(participant);
@@ -28,6 +43,11 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
             return participant;
         }
 
+        /// <summary>
+        /// Удаляет участника по идентификатору.
+        /// </summary>
+        /// <param name="participantId">Идентификатор участника для удаления.</param>
+        /// <returns>Удаленный участник.</returns>
         public async Task<Participant> DeleteParticipantAsync(Guid participantId)
         {
             if (participantId == Guid.Empty)
@@ -39,11 +59,20 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
             return participant;
         }
 
+        /// <summary>
+        /// Получает всех участников.
+        /// </summary>
+        /// <returns>Список всех участников.</returns>
         public async Task<List<Participant>> GetAllParticipantsAsync()
         {
             return (await _unitOfWork.Participants.GetAllAsync()).ToList();
         }
 
+        /// <summary>
+        /// Получает участника по идентификатору.
+        /// </summary>
+        /// <param name="participantId">Идентификатор участника.</param>
+        /// <returns>Найденный участник.</returns>
         public async Task<Participant> GetParticipantByIdAsync(Guid participantId)
         {
             if (participantId == Guid.Empty)
@@ -53,6 +82,13 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
                 ?? throw new KeyNotFoundException($"Participant with ID {participantId} not found");
         }
 
+        /// <summary>
+        /// Получает участников по идентификатору события с пагинацией.
+        /// </summary>
+        /// <param name="eventId">Идентификатор события.</param>
+        /// <param name="pageNo">Номер страницы.</param>
+        /// <param name="pageSize">Размер страницы.</param>
+        /// <returns>Список участников события с пагинацией.</returns>
         public async Task<List<Participant>> GetParticipantsByEventIdPaginatedAsync(
             Guid? eventId,
             int pageNo = 1,
@@ -70,6 +106,13 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
             return ApplyPagination(query, pageNo, pageSize).ToList();
         }
 
+        /// <summary>
+        /// Получает участников по идентификатору пользователя с пагинацией.
+        /// </summary>
+        /// <param name="userId">Идентификатор пользователя.</param>
+        /// <param name="pageNo">Номер страницы.</param>
+        /// <param name="pageSize">Размер страницы.</param>
+        /// <returns>Список участников пользователя с пагинацией.</returns>
         public async Task<List<Participant>> GetParticipantsByUserIdPaginatedAsync(
             Guid? userId,
             int pageNo = 1,
@@ -87,10 +130,15 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
             return ApplyPagination(query, pageNo, pageSize).ToList();
         }
 
+        /// <summary>
+        /// Обновляет существующего участника.
+        /// </summary>
+        /// <param name="participantEntity">Обновленный участник.</param>
+        /// <returns>Обновленный участник.</returns>
         public async Task<Participant> UpdateParticipantAsync(Participant participantEntity)
         {
             ArgumentNullException.ThrowIfNull(participantEntity);
-            ValidateParticipant(participantEntity);
+            await ValidateParticipant(participantEntity);
 
             var existingParticipant = await GetParticipantByIdAsync(participantEntity.Id);
 
@@ -104,24 +152,15 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
             return existingParticipant;
         }
 
-        private void ValidateParticipant(Participant participant)
+        private async Task ValidateParticipant(Participant participant)
         {
-            var errors = new List<string>();
+            var validationResult = await _validator.ValidateAsync(participant);
 
-            if (string.IsNullOrWhiteSpace(participant.FirstName) || participant.FirstName.Length > 20)
-                errors.Add("First name must be between 1-20 characters");
-
-            if (string.IsNullOrWhiteSpace(participant.LastName) || participant.LastName.Length > 20)
-                errors.Add("Last name must be between 1-20 characters");
-
-            if (participant.BirthDate > DateTime.Now.AddYears(-18))
-                errors.Add("Participant must be at least 18 years old");
-
-            if (!IsValidEmail(participant.Email))
-                errors.Add("Invalid email format");
-
-            if (errors.Any())
-                throw new ArgumentException(string.Join(", ", errors));
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ArgumentException(errors);
+            }
         }
 
         private async Task ValidateRelationships(Participant participant)
@@ -142,19 +181,6 @@ namespace Events_WEB_APP.Application.Services.ParticipantService
 
             if (existingParticipant.Any())
                 throw new InvalidOperationException("User is already registered for this event");
-        }
-
-        private bool IsValidEmail(string email)
-        {
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         private void ValidatePaginationParameters(int pageNo, int pageSize)

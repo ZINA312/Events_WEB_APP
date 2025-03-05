@@ -14,12 +14,23 @@ namespace Events_WEB_APP.API.Controllers
     {
         private readonly IParticipantService _participantService;
         private readonly IMapper _mapper;
+
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="ParticipantController"/>.
+        /// </summary>
+        /// <param name="participantService">Сервис для управления участниками.</param>
+        /// <param name="mapper">Mapper для преобразования между сущностями и DTO.</param>
         public ParticipantController(IParticipantService participantService, IMapper mapper)
         {
             _participantService = participantService;
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Регистрирует нового участника.
+        /// </summary>
+        /// <param name="request">Запрос для создания участника.</param>
+        /// <returns>Результат операции регистрации.</returns>
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> RegisterParticipant([FromBody] ParticipantCreateRequest request)
@@ -43,6 +54,13 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает участников события по его ID.
+        /// </summary>
+        /// <param name="eventId">ID события для получения участников.</param>
+        /// <param name="page">Номер страницы для получения (по умолчанию 1).</param>
+        /// <param name="pageSize">Размер страницы (по умолчанию 10).</param>
+        /// <returns>Пагинированный ответ с участниками события.</returns>
         [HttpGet("event/{eventId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetParticipantsByEvent(
@@ -63,6 +81,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает участника по его ID.
+        /// </summary>
+        /// <param name="id">ID участника для получения.</param>
+        /// <returns>Ответ с участником.</returns>
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetParticipantById(Guid id)
@@ -82,6 +105,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Отменяет участие по ID участника.
+        /// </summary>
+        /// <param name="id">ID участника для отмены участия.</param>
+        /// <returns>Результат операции отмены участия.</returns>
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> CancelParticipation(Guid id)
@@ -101,6 +129,13 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает участия пользователя по его ID.
+        /// </summary>
+        /// <param name="userId">ID пользователя для получения его участий.</param>
+        /// <param name="page">Номер страницы для получения (по умолчанию 1).</param>
+        /// <param name="pageSize">Размер страницы (по умолчанию 10).</param>
+        /// <returns>Пагинированный ответ с участиями пользователя.</returns>
         [HttpGet("user/{userId}")]
         [Authorize]
         public async Task<IActionResult> GetParticipationsByUser(

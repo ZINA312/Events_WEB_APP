@@ -15,6 +15,11 @@ namespace Events_WEB_APP.API.Controllers
         private readonly IRoleService _roleService;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// Инициализирует новый экземпляр класса <see cref="RoleController"/>.
+        /// </summary>
+        /// <param name="roleService">Сервис для управления ролями.</param>
+        /// <param name="mapper">Mapper для преобразования между сущностями и DTO.</param>
         public RoleController(
             IRoleService roleService,
             IMapper mapper)
@@ -23,6 +28,11 @@ namespace Events_WEB_APP.API.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// Создает новую роль.
+        /// </summary>
+        /// <param name="request">Запрос для создания роли.</param>
+        /// <returns>Ответ с созданной ролью.</returns>
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request)
@@ -48,6 +58,10 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает все роли.
+        /// </summary>
+        /// <returns>Список ролей.</returns>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RoleResponse>>> GetAllRoles()
@@ -63,6 +77,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Получает роль по ее ID.
+        /// </summary>
+        /// <param name="roleId">ID роли для получения.</param>
+        /// <returns>Ответ с ролью.</returns>
         [Authorize(Roles = "Admin")]
         [HttpGet("{roleId}")]
         public async Task<ActionResult<RoleResponse>> GetRoleById(Guid roleId)
@@ -82,6 +101,12 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Обновляет существующую роль.
+        /// </summary>
+        /// <param name="roleId">ID роли для обновления.</param>
+        /// <param name="request">Запрос с обновленными данными роли.</param>
+        /// <returns>Ответ с обновленной ролью.</returns>
         [Authorize(Roles = "Admin")]
         [HttpPut("{roleId}")]
         public async Task<IActionResult> UpdateRole(
@@ -113,6 +138,11 @@ namespace Events_WEB_APP.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Удаляет роль по ее ID.
+        /// </summary>
+        /// <param name="roleId">ID роли для удаления.</param>
+        /// <returns>Результат операции удаления.</returns>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{roleId}")]
         public async Task<IActionResult> DeleteRole(Guid roleId)

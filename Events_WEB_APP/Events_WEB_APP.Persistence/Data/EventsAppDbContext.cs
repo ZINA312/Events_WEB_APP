@@ -1,13 +1,12 @@
 ﻿using Events_WEB_APP.Core.Entities;
+using Events_WEB_APP.Infrastructure.PasswordHashers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Events_WEB_APP.Persistence.Data
 {
     public class EventsAppDbContext : DbContext
     {
-        private readonly IConfiguration _configuration;
         public EventsAppDbContext(DbContextOptions<EventsAppDbContext> options) : base(options)
         {
         }
@@ -16,6 +15,12 @@ namespace Events_WEB_APP.Persistence.Data
         public DbSet<Participant> Participants { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+            optionsBuilder.ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -98,6 +103,8 @@ namespace Events_WEB_APP.Persistence.Data
                     .HasMaxLength(254);
                 userBuilder.Property(u => u.PasswordHash)
                     .HasColumnName("PasswordHash");
+                userBuilder.Property(u => u.RefreshToken)
+                    .HasColumnName("RefreshToken");
                 userBuilder.HasMany(u => u.Participants)
                     .WithOne(p => p.User)
                     .HasForeignKey(p => p.UserId);
@@ -113,10 +120,44 @@ namespace Events_WEB_APP.Persistence.Data
                 roleBuilder.Property(r => r.Id)
                     .HasColumnName("RoleId");
                 roleBuilder.Property(r => r.Name)
-                    .HasColumnName("Name");
+                    .HasColumnName("Name")
+                    .HasMaxLength(20);
             });
+
+            SeedInitialData(modelBuilder);
         }
-    
+
+        private void SeedInitialData(ModelBuilder modelBuilder)
+        {
+            var adminRole = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Admin"
+            };
+            var userRole = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "User"
+            };
+            modelBuilder.Entity<Role>().HasData(adminRole, userRole);
+
+            IPasswordHasher passwordHasher = new PasswordHasher();
+            var hashedPassword = passwordHasher.Generate("Admin");
+
+            var adminUser = new User
+            {
+                Id = Guid.NewGuid(),
+                UserName = "admin",
+                Email = "admin@events.com",
+                PasswordHash = hashedPassword,
+                RoleId = adminRole.Id,
+                RefreshToken = null,
+                RefreshTokenExpiry = DateTime.UtcNow.AddYears(1)
+            };
+
+            modelBuilder.Entity<User>().HasData(adminUser);
+        }
+
         public void BeginTeansaction()
         {
             Database.BeginTransaction();
