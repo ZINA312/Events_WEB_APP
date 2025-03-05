@@ -5,6 +5,8 @@ using Events_WEB_APP.Infrastructure.JWT;
 using Events_WEB_APP.API.Mapping;
 using Events_WEB_APP.API.Extentions;
 using Events_WEB_APP.API.Middlewares;
+using Events_WEB_APP.Persistence.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,11 +27,14 @@ builder.Services.AddInfrastructure();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var db = scope.ServiceProvider.GetRequiredService<EventsAppDbContext>();
+    db.Database.Migrate();
 }
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
