@@ -39,6 +39,97 @@ namespace Events_WEB_APP.API.Tests.Controllers
             };
         }
 
+        [Fact]
+        public async Task Search_ReturnsEvents_WhenNameMatches()
+        {
+            // Arrange
+            var testEvent = CreateTestEvent();
+            testEvent.Name = "Test Conference";
+            var paginated = new PaginatedResponse<Event>(
+                new List<Event> { testEvent },
+                1,
+                10,
+                1
+            );
+
+            _mockEventService.Setup(s =>
+                s.SearchEventsByNameAsync("Conference", 1, 10))
+                .ReturnsAsync(paginated);
+
+            _mockMapper.Setup(m => m.Map<List<EventResponse>>(It.IsAny<List<Event>>()))
+                .Returns(new List<EventResponse> { new EventResponse { Name = testEvent.Name } });
+
+            // Act
+            var result = await _controller.GetByName("Conference", 1, 10);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var response = Assert.IsType<PaginatedResponse<EventResponse>>(okResult.Value);
+            Assert.Single(response.Items);
+            Assert.Equal("Test Conference", response.Items.First().Name);
+        }
+
+        [Fact]
+        public async Task Search_ReturnsBadRequest_WhenNameIsEmpty()
+        {
+            // Act
+            var result = await _controller.GetByName("", 1, 10);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result.Result);
+        }
+
+        [Fact]
+        public async Task Search_ReturnsEmpty_WhenNoMatches()
+        {
+            // Arrange
+            var paginated = new PaginatedResponse<Event>(
+                new List<Event>(),
+                1,
+                10,
+                0
+            );
+
+            _mockEventService.Setup(s =>
+                s.SearchEventsByNameAsync("Unknown", 1, 10))
+                .ReturnsAsync(paginated);
+
+            // Act
+            var result = await _controller.GetByName("Unknown", 1, 10);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var response = Assert.IsType<PaginatedResponse<EventResponse>>(okResult.Value);
+            Assert.Null(response.Items);
+            Assert.Equal(0, response.TotalCount);
+        }
+
+        [Fact]
+        public async Task Search_ReturnsCorrectPaginationMetadata()
+        {
+            // Arrange
+            var events = new List<Event>
+            {
+                CreateTestEvent(),
+                CreateTestEvent()
+            };
+            var paginated = new PaginatedResponse<Event>(events, 2, 1, 2);
+
+            _mockEventService.Setup(s =>
+                s.SearchEventsByNameAsync("Event", 2, 1))
+                .ReturnsAsync(paginated);
+
+            // Act
+            var result = await _controller.GetByName("Event", 2, 1);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var response = Assert.IsType<PaginatedResponse<EventResponse>>(okResult.Value);
+            Assert.Equal(2, response.PageNumber);
+            Assert.Equal(1, response.PageSize);
+            Assert.Equal(2, response.TotalCount);
+        }
+
         public void Dispose() { }
 
         private Event CreateTestEvent()

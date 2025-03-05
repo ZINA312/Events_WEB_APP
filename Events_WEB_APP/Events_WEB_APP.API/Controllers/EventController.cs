@@ -62,6 +62,27 @@ namespace Events_WEB_APP.API.Controllers
         }
 
         /// <summary>
+        /// Ищет события по названию с пагинацией
+        /// </summary>
+        /// <param name="name">Фрагмент названия для поиска</param>
+        /// <param name="page">Номер страницы (по умолчанию 1)</param>
+        /// <param name="pageSize">Размер страницы (по умолчанию 10)</param>
+        [HttpGet("search")]
+        public async Task<ActionResult<PaginatedResponse<EventResponse>>> GetByName(
+            [FromQuery] string name,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return BadRequest("Search query cannot be empty");
+            }
+
+            var result = await _eventService.SearchEventsByNameAsync(name, page, pageSize);
+            return Ok(MapToPaginatedResponse(result));
+        }
+
+        /// <summary>
         /// Создает новое событие.
         /// </summary>
         /// <param name="request">Запрос для создания события.</param>

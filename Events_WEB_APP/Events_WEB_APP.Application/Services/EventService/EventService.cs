@@ -72,6 +72,34 @@ namespace Events_WEB_APP.Application.Services.EventService
         }
 
         /// <summary>
+        /// Получает события по названию с пагинацией.
+        /// </summary>
+        /// <param name="name">Название события.</param>
+        /// <param name="page">Номер страницы.</param>
+        /// <param name="pageSize">Размер страницы.</param>
+        /// <returns>Пагинированный ответ с событиями.</returns>
+        public async Task<PaginatedResponse<Event>> SearchEventsByNameAsync(
+            string name,
+            int page = 1,
+            int pageSize = 10)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Search query is required");
+
+            var query = _unitOfWork.Events.GetAll()
+                .Where(e => e.Name.Contains(name));
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderBy(e => e.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new PaginatedResponse<Event>(items, page, pageSize, totalCount);
+        }
+
+        /// <summary>
         /// Получает событие по идентификатору.
         /// </summary>
         /// <param name="eventId">Идентификатор события.</param>

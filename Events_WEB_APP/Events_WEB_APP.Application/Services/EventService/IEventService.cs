@@ -20,6 +20,14 @@ namespace Events_WEB_APP.Application.Services.EventService
         /// <returns>Список всех событий.</returns>
         Task<List<Event>> GetAllEventsAsync();
         /// <summary>
+        /// Получает события по названию с пагинацией.
+        /// </summary>
+        /// <param name="name">Название события.</param>
+        /// <param name="page">Номер страницы.</param>
+        /// <param name="pageSize">Размер страницы.</param>
+        /// <returns>Пагинированный ответ с событиями.</returns>
+        Task<PaginatedResponse<Event>> SearchEventsByNameAsync(string name, int page, int pageSize);
+        /// <summary>
         /// Получает события с пагинацией.
         /// </summary>
         /// <param name="categoryName">Название категории для фильтрации.</param>
